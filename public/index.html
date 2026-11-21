@@ -146,7 +146,8 @@
           const state = video.platformState[platform] || 'Waiting';
           const css = state === 'Complete' ? 'done' : state === 'Failed' ? 'failed' : state === 'Waiting' ? 'waiting' : 'active';
           const progress = video.platformProgress[platform];
-          return `<span class="badge ${css}" data-badge="${platform}">${PLATFORM_NAMES[platform]}: ${escapeHtml(progress !== undefined && state === 'Uploading' ? `${progress}%` : state)}</span>`;
+          const error = video.platformError?.[platform];
+          return `<span class="badge ${css}" data-badge="${platform}"${error ? ` title="${escapeHtml(error)}"` : ''}>${PLATFORM_NAMES[platform]}: ${escapeHtml(progress !== undefined && state === 'Uploading' ? `${progress}%` : state)}</span>`;
         }).join('');
         return `<article class="video-card" data-video="${video.id}">
           <div class="video-top"><div><div class="file-name">${escapeHtml(video.file.name)}</div><div class="file-size">${formatBytes(video.file.size)} · ${statusText}</div></div><button class="remove" data-remove="${video.id}" aria-label="Remove video" ${running ? 'disabled' : ''}>×</button></div>
@@ -185,7 +186,8 @@
         const state = video.platformState[platform] || 'Waiting';
         const css = state === 'Complete' ? 'done' : state === 'Failed' ? 'failed' : state === 'Waiting' ? 'waiting' : 'active';
         const progress = video.platformProgress[platform];
-        return `<span class="badge ${css}" data-badge="${platform}">${PLATFORM_NAMES[platform]}: ${escapeHtml(progress !== undefined && state === 'Uploading' ? `${progress}%` : state)}</span>`;
+        const error = video.platformError?.[platform];
+        return `<span class="badge ${css}" data-badge="${platform}"${error ? ` title="${escapeHtml(error)}"` : ''}>${PLATFORM_NAMES[platform]}: ${escapeHtml(progress !== undefined && state === 'Uploading' ? `${progress}%` : state)}</span>`;
       }).join('');
       $('[data-badges]', card).innerHTML = badges;
     }
@@ -199,7 +201,7 @@
         videos.push({
           id: crypto.randomUUID(), file, title, description: '', tags: '', visibility: 'public', scheduledAt: '',
           platforms: { youtube: true, facebook: true, instagram: false },
-          platformState: {}, platformProgress: {}, platformBytes: {}, state: 'queued', watermarkProgress: 0, error: null, startedAt: null
+          platformState: {}, platformError: {}, platformProgress: {}, platformBytes: {}, state: 'queued', watermarkProgress: 0, error: null, startedAt: null
         });
       }
       renderQueue();
@@ -272,8 +274,8 @@
           '-map', '0:a?',
           '-map_metadata', '0',
           '-c:v', 'libx264',
-          '-preset', 'veryfast',
-          '-crf', '16',
+          '-preset', 'ultrafast',
+          '-crf', '22',
           '-c:a', 'copy',
           '-movflags', '+faststart',
           '-f', 'mp4',
@@ -323,7 +325,11 @@
           if (event.lengthComputable && onProgress) onProgress(event.loaded);
         };
         xhr.onload = () => resolve({ status: xhr.status, text: xhr.responseText, getHeader: (name) => xhr.getResponseHeader(name) });
-        xhr.onerror = () => reject(new Error('Network connection dropped during upload.'));
+        xhr.onerror = () => {
+          const error = new Error('Network connection dropped during upload.');
+          error.networkError = true;
+          reject(error);
+        };
         xhr.ontimeout = () => reject(new Error('Upload request timed out.'));
         xhr.onabort = () => reject(new Error('Upload request was cancelled.'));
         xhr.send(body);
@@ -359,30 +365,61 @@
       refreshVideoCard(video);
       const session = await api('/api/youtube/init-upload', { method: 'POST', body: JSON.stringify(metadata) });
       let offset = 0;
+      const markComplete = (response) => {
+        try {
+          const payload = response.text ? JSON.parse(response.text) : null;
+          if (typeof payload?.id === 'string') video.youtubeVideoId = payload.id;
+        } catch {
+          // A successful final status is authoritative even when its response body is unreadable.
+        }
+        video.platformState.youtube = 'Complete';
+        updateProgress(video, 'youtube', video.file.size);
+      };
       while (offset < video.file.size) {
         const end = Math.min(offset + CHUNK_SIZE, video.file.size);
         const chunk = video.file.slice(offset, end);
         let response;
         video.platformState.youtube = 'Uploading';
-        await retryRequest(async () => {
-          response = await xhrRequest({
-            method: 'PUT',
-            url: session.uploadUrl,
-            headers: {
-              Authorization: `Bearer ${session.accessToken}`,
-              'Content-Type': 'application/octet-stream',
-              'Content-Range': `bytes ${offset}-${end - 1}/${video.file.size}`
-            },
-            body: chunk,
-            onProgress: (loaded) => updateProgress(video, 'youtube', offset + loaded)
+        try {
+          await retryRequest(async () => {
+            response = await xhrRequest({
+              method: 'PUT',
+              url: session.uploadUrl,
+              headers: {
+                Authorization: `Bearer ${session.accessToken}`,
+                'Content-Type': 'application/octet-stream',
+                'Content-Range': `bytes ${offset}-${end - 1}/${video.file.size}`
+              },
+              body: chunk,
+              onProgress: (loaded) => updateProgress(video, 'youtube', offset + loaded)
+            });
+            return response;
+          }, (result) => result.status === 308 || ((result.status === 200 || result.status === 201) && end === video.file.size), () => {
+            video.platformState.youtube = 'Retrying';
+            refreshVideoCard(video);
           });
-          return response;
-        }, (result) => result.status === 308 || ((result.status === 200 || result.status === 201) && end === video.file.size), () => {
-          video.platformState.youtube = 'Retrying';
-          refreshVideoCard(video);
-        });
+        } catch (error) {
+          if (end !== video.file.size || !error.networkError) throw error;
+          try {
+            const status = await api('/api/youtube/check-upload', {
+              method: 'POST',
+              body: JSON.stringify({ uploadUrl: session.uploadUrl, fileSize: video.file.size })
+            });
+            if (status.status === 200 || status.status === 201) {
+              video.youtubeVideoId = status.videoId || video.youtubeVideoId;
+              markComplete({ status: status.status, text: '' });
+              refreshVideoCard(video);
+              return;
+            }
+          } catch (statusError) {
+            throw new Error(`${error.message} YouTube upload status check failed: ${statusError.message}`);
+          }
+          throw error;
+        }
         if (response.status === 200 || response.status === 201) {
-          offset = video.file.size;
+          markComplete(response);
+          refreshVideoCard(video);
+          return;
         } else {
           const range = response.getHeader('Range');
           const match = range?.match(/bytes=0-(\d+)/);
@@ -479,7 +516,10 @@
       video.state = 'watermarking';
       video.startedAt = Date.now();
       const platforms = selectedPlatforms(video);
-      for (const platform of platforms) video.platformState[platform] = 'Watermarking';
+      for (const platform of platforms) {
+        video.platformState[platform] = 'Watermarking';
+        delete video.platformError[platform];
+      }
       refreshVideoCard(video);
       if (!platforms.length) {
         video.error = 'Select at least one platform.';
@@ -492,7 +532,10 @@
       } catch (error) {
         video.error = `Watermarking failed: ${error.message}`;
         video.state = 'failed';
-        for (const platform of platforms) video.platformState[platform] = 'Failed';
+        for (const platform of platforms) {
+          video.platformState[platform] = 'Failed';
+          video.platformError[platform] = video.error;
+        }
         refreshVideoCard(video);
         toast(`${video.file.name}: ${video.error}`);
         return;
@@ -507,8 +550,14 @@
           if (platform === 'facebook') await uploadFacebook(video, metadata);
           if (platform === 'instagram') await publishInstagram(video, metadata);
         } catch (error) {
-          video.platformState[platform] = 'Failed';
-          video.error = error.message;
+          if (platform === 'youtube' && (video.youtubeVideoId || video.platformState.youtube === 'Complete')) {
+            video.platformState.youtube = 'Complete';
+            video.platformError[platform] = error.message;
+          } else {
+            video.platformState[platform] = 'Failed';
+            video.platformError[platform] = error.message;
+            video.error = error.message;
+          }
           refreshVideoCard(video);
         }
       }

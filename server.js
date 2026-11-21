@@ -372,6 +372,57 @@ app.post('/api/youtube/init-upload', async (req, res, next) => {
   }
 });
 
+app.post('/api/youtube/check-upload', async (req, res, next) => {
+  try {
+    const { uploadUrl, fileSize } = req.body || {};
+    let parsedUploadUrl;
+    try {
+      parsedUploadUrl = new URL(uploadUrl);
+    } catch {
+      throw Object.assign(new Error('A valid YouTube upload session is required.'), { status: 400 });
+    }
+    if (parsedUploadUrl.protocol !== 'https:' ||
+        parsedUploadUrl.hostname !== 'www.googleapis.com' ||
+        parsedUploadUrl.pathname !== '/upload/youtube/v3/videos' ||
+        parsedUploadUrl.username || parsedUploadUrl.password || parsedUploadUrl.hash ||
+        parsedUploadUrl.searchParams.get('uploadType') !== 'resumable' ||
+        !parsedUploadUrl.searchParams.get('upload_id') ||
+        !Number.isSafeInteger(fileSize) || fileSize <= 0) {
+      throw Object.assign(new Error('A valid YouTube upload session and file size are required.'), { status: 400 });
+    }
+    const config = effectiveConfig();
+    requireFields(config, ['YOUTUBE_CLIENT_ID', 'YOUTUBE_CLIENT_SECRET', 'YOUTUBE_REFRESH_TOKEN']);
+    const token = await getYouTubeToken(config);
+    const response = await fetch(parsedUploadUrl, {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Length': '0',
+        'Content-Range': `bytes */${fileSize}`
+      },
+      body: '',
+      redirect: 'error',
+      signal: AbortSignal.timeout(30_000)
+    });
+    const text = await response.text();
+    let payload = {};
+    try {
+      payload = text ? JSON.parse(text) : {};
+    } catch {
+      // Final upload status is authoritative even when YouTube's response body is unreadable.
+    }
+    if (response.status === 200 || response.status === 201) {
+      return res.json({ status: response.status, videoId: typeof payload.id === 'string' ? payload.id : null });
+    }
+    if (response.status === 308) {
+      return res.json({ status: response.status, range: response.headers.get('range') });
+    }
+    throw Object.assign(new Error(payload.error?.message || `YouTube upload status check failed (HTTP ${response.status}).`), { status: 502 });
+  } catch (error) {
+    next(error);
+  }
+});
+
 app.post('/api/facebook/init-upload', async (req, res, next) => {
   try {
     const metadata = validateMetadata(req.body);

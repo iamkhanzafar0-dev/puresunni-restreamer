@@ -37,8 +37,8 @@ Credentials can be supplied as environment variables, or entered in Settings and
 ## Upload behavior and platform requirements
 
 - Add any number of video files to the browser queue. Only two videos are processed concurrently; selected platforms for one video are uploaded sequentially.
-- Before any platform upload begins, the browser applies `public/logo.png` in the top-right corner: 8% of the video width, capped at 120 by 60 pixels while preserving the logo aspect ratio, with a 16-pixel margin. Video is encoded as high-quality H.264; the original audio stream is copied without re-encoding.
-- YouTube and Facebook receive the processed file in 16 MiB browser-to-platform chunks with retry for network drops. The browser reports watermarking and per-platform upload progress, bytes sent, and average speed.
+- Before any platform upload begins, the browser applies `public/logo.png` in the top-right corner: 8% of the video width, capped at 120 by 60 pixels while preserving the logo aspect ratio, with a 16-pixel margin. Video is encoded as H.264 with the ultrafast preset and CRF 22; the original audio stream is copied without re-encoding.
+- YouTube and Facebook receive the processed file in 16 MiB browser-to-platform chunks with retry for network drops. If the final YouTube response is lost, the app checks the resumable session before reporting failure. Platform errors are available on the status badge tooltip.
 - Instagram's API requires a public HTTPS video URL. Set `PUBLIC_BASE_URL` to the app's public HTTPS origin; the processed MP4 is streamed to the app and made available at a random, unguessable URL for up to 24 hours, then deleted. The app must be reachable by Meta over HTTPS.
 - The authenticated browser receives the YouTube resumable URL and short-lived OAuth access token, and the Facebook upload session details and Page token, so it can upload directly. Protect the app with a strong password and HTTPS.
 - YouTube uses the unified title, description, tags, visibility, and optional publish time. Scheduled YouTube videos are created as private with `publishAt`.
