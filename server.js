@@ -1,6 +1,9 @@
 const crypto = require('node:crypto');
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
+const { Transform } = require('node:stream');
+const { pipeline } = require('node:stream/promises');
 const express = require('express');
 
 const PORT = Number(process.env.PORT) || 3000;
@@ -9,6 +12,10 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 const GRAPH_API_VERSION = 'v22.0';
 const CONFIG_FILE = path.resolve(process.env.CONFIG_FILE || path.join(__dirname, 'data', 'publisher-config.enc'));
 const CONFIG_ENCRYPTION_KEY = process.env.CONFIG_ENCRYPTION_KEY;
+const PUBLIC_BASE_URL = process.env.PUBLIC_BASE_URL;
+const INSTAGRAM_MEDIA_DIR = path.join(os.tmpdir(), `puresunni-instagram-media-${process.pid}`);
+const INSTAGRAM_MEDIA_TTL = 24 * 60 * 60 * 1000;
+const MAX_INSTAGRAM_FILE_SIZE = 1024 ** 3 - 1;
 const CONFIG_FIELDS = [
   'YOUTUBE_CLIENT_ID',
   'YOUTUBE_CLIENT_SECRET',
@@ -31,6 +38,9 @@ if (CONFIG_ENCRYPTION_KEY && !/^[a-f\d]{64}$/i.test(CONFIG_ENCRYPTION_KEY)) {
 const app = express();
 let savedConfig = {};
 let cachedYouTubeToken = null;
+const instagramMedia = new Map();
+
+fs.mkdirSync(INSTAGRAM_MEDIA_DIR, { recursive: true, mode: 0o700 });
 
 function readConfig() {
   if (!fs.existsSync(CONFIG_FILE)) return;
@@ -232,10 +242,75 @@ function noStore(_req, res, next) {
 app.disable('x-powered-by');
 app.use(noStore);
 app.get('/health', (_req, res) => res.json({ ok: true }));
+app.get('/media/:token', (req, res) => {
+  const media = instagramMedia.get(req.params.token);
+  if (!media || media.expiresAt <= Date.now()) {
+    instagramMedia.delete(req.params.token);
+    return res.sendStatus(404);
+  }
+  res.type('video/mp4');
+  res.set('Cache-Control', 'public, max-age=3600');
+  res.sendFile(media.filePath, (error) => {
+    if (error && !res.headersSent) res.sendStatus(404);
+  });
+});
 app.use(authorized);
 app.use(express.json({ limit: '64kb' }));
+app.use('/vendor/ffmpeg', express.static(path.join(__dirname, 'node_modules', '@ffmpeg', 'ffmpeg', 'dist', 'esm')));
+app.use('/vendor/ffmpeg-core', express.static(path.join(__dirname, 'node_modules', '@ffmpeg', 'core', 'dist', 'esm')));
 app.use(express.static(path.join(__dirname, 'public'), { index: false }));
 app.get('/', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+
+app.post('/api/instagram/media', async (req, res, next) => {
+  const token = crypto.randomBytes(32).toString('base64url');
+  const filePath = path.join(INSTAGRAM_MEDIA_DIR, `${token}.mp4`);
+  let fileSize = 0;
+  try {
+    if (!PUBLIC_BASE_URL) {
+      throw Object.assign(new Error('Set PUBLIC_BASE_URL to the app public HTTPS URL to publish Instagram Reels.'), { status: 503 });
+    }
+    let publicBase;
+    try {
+      publicBase = new URL(PUBLIC_BASE_URL);
+    } catch {
+      throw Object.assign(new Error('PUBLIC_BASE_URL must be a valid public HTTPS URL.'), { status: 503 });
+    }
+    if (publicBase.protocol !== 'https:' || publicBase.pathname !== '/' ||
+        publicBase.username || publicBase.password || publicBase.search || publicBase.hash) {
+      throw Object.assign(new Error('PUBLIC_BASE_URL must be a public HTTPS origin without a path.'), { status: 503 });
+    }
+    if (req.headers['content-type'] !== 'video/mp4') {
+      throw Object.assign(new Error('A processed MP4 video is required.'), { status: 400 });
+    }
+    const limiter = new Transform({
+      transform(chunk, _encoding, callback) {
+        fileSize += chunk.length;
+        if (fileSize > MAX_INSTAGRAM_FILE_SIZE) {
+          callback(Object.assign(new Error('Instagram Reels require a watermarked video smaller than 1 GB.'), { status: 413 }));
+          return;
+        }
+        callback(null, chunk);
+      }
+    });
+    await pipeline(req, limiter, fs.createWriteStream(filePath, { flags: 'wx', mode: 0o600 }));
+    if (!fileSize) throw Object.assign(new Error('The processed video is empty.'), { status: 400 });
+    const publicUrl = new URL(`media/${token}`, publicBase.href.endsWith('/') ? publicBase : `${publicBase.href}/`);
+    instagramMedia.set(token, { filePath, expiresAt: Date.now() + INSTAGRAM_MEDIA_TTL });
+    res.status(201).json({ videoUrl: publicUrl.href, fileSize });
+  } catch (error) {
+    fs.promises.rm(filePath, { force: true }).catch((cleanupError) => console.error(cleanupError.message));
+    next(error);
+  }
+});
+
+setInterval(() => {
+  for (const [token, media] of instagramMedia) {
+    if (media.expiresAt <= Date.now()) {
+      instagramMedia.delete(token);
+      fs.promises.rm(media.filePath, { force: true }).catch((error) => console.error(error.message));
+    }
+  }
+}, 15 * 60 * 1000).unref();
 
 app.get('/api/settings', (_req, res) => {
   const config = effectiveConfig();
