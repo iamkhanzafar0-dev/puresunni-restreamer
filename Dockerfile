@@ -1,6 +1,5 @@
 FROM node:20-alpine
 
-RUN apk add --no-cache ffmpeg
 WORKDIR /app
 
 COPY package*.json ./
@@ -10,9 +9,6 @@ COPY server.js ./
 COPY public ./public
 
 ENV NODE_ENV=production
-ENV DESTINATIONS_FILE=/data/destinations.json
-RUN mkdir -p /data
-VOLUME ["/data"]
 
-EXPOSE 3000 1935
+EXPOSE 3000
 CMD ["npm", "start"]
