@@ -1,87 +1,98 @@
 <!doctype html>
-<html lang="en">
+<html lang="hi">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#0a0e14">
-  <title>PureSunni Bulk Video Publisher</title>
+  <meta name="theme-color" content="#0f172a">
+  <title>PureSunni — बल्क वीडियो पब्लिशर</title>
   <style>
-    :root{color-scheme:dark;--bg:#0a0e14;--panel:#111821;--panel2:#0d131b;--line:#25303d;--text:#eef3f8;--muted:#91a0b2;--green:#43d6a1;--blue:#8eb3ff;--amber:#f3bd61;--red:#ff7583}
+    :root{color-scheme:dark;--bg:#0f172a;--panel:#1e293b;--panel2:#0f172a;--line:#334155;--text:#f8fafc;--muted:#94a3b8;--green:#22c55e;--blue:#38bdf8;--amber:#f59e0b;--red:#f87171}
     *{box-sizing:border-box}
-    body{margin:0;background:radial-gradient(ellipse at 50% -18%,#1b2c3a 0,transparent 58%),var(--bg);color:var(--text);font:14px/1.5 Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
     button,input,select,textarea{font:inherit}button{cursor:pointer}
-    .shell{width:min(1120px,calc(100% - 36px));margin:auto;padding:30px 0 64px}
-    header{display:flex;justify-content:space-between;align-items:center;gap:18px;margin-bottom:26px}
-    .brand{display:flex;align-items:center;gap:13px}.brand-mark{width:43px;height:43px;border:1px solid #335044;border-radius:14px;background:linear-gradient(145deg,#19352d,#111a1b);display:grid;place-items:center;color:#73e8b9;font-size:21px}
+    .shell{width:min(920px,calc(100% - 36px));margin:auto;padding:24px 0 64px}
+    header{display:flex;justify-content:space-between;align-items:center;gap:18px;margin-bottom:18px}
+    .brand{display:flex;align-items:center;gap:13px}.brand-mark{width:43px;height:43px;border:1px solid #166534;border-radius:14px;background:#14532d;display:grid;place-items:center;color:#86efac;font-size:21px}
     h1{font-size:20px;letter-spacing:-.4px;margin:0}.subtitle{color:var(--muted);font-size:12px;margin:2px 0 0}
     .header-actions{display:flex;gap:9px;align-items:center}
-    .button{border:1px solid #354354;background:#1c2633;color:#eaf0f8;border-radius:8px;padding:9px 13px;font-size:12px;font-weight:750}.button:hover{background:#273545}.button:disabled{opacity:.5;cursor:not-allowed}
-    .primary{background:#176449;border-color:#228361;color:#d4ffef}.primary:hover{background:#1d7858}.danger{color:#ffbbc2;border-color:#673943;background:#29171c}
-    .panel{background:linear-gradient(150deg,#141d28,#10161e);border:1px solid var(--line);border-radius:15px;padding:20px;box-shadow:0 12px 35px #0002}
+    .button{border:1px solid #475569;background:#475569;color:#fff;border-radius:8px;padding:10px 14px;font-size:12px;font-weight:750}.button:hover{filter:brightness(1.12)}.button:disabled{opacity:.5;cursor:not-allowed}
+    .primary{background:#22c55e;border-color:#22c55e;color:#052e16}.primary:hover{background:#4ade80}.danger{color:#1c1917;border-color:#f59e0b;background:#f59e0b}
+    .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px;box-shadow:0 12px 35px #0002}
     .panel-head{display:flex;justify-content:space-between;align-items:flex-start;gap:15px;margin-bottom:16px}.panel h2{font-size:15px;margin:0}.hint{margin:4px 0 0;color:var(--muted);font-size:12px}
-    .security-note{border:1px solid #344432;background:#1a2119;color:#c7d7a4;padding:11px 13px;border-radius:9px;font-size:12px;margin-bottom:17px}
-    .drop-zone{border:1px dashed #476277;background:#101a24;border-radius:12px;padding:24px;text-align:center;transition:.15s}.drop-zone.drag{border-color:var(--green);background:#10231f}.drop-zone strong{display:block;font-size:14px}.drop-zone p{margin:5px 0 12px;color:var(--muted);font-size:12px}
+    .security-note{border:1px solid #334155;background:#1e293b;color:#cbd5e1;padding:11px 13px;border-radius:9px;font-size:12px;margin-bottom:14px}
+    .switch-row{display:flex;align-items:center;justify-content:space-between;gap:14px;background:#0f172a;padding:14px 16px;border-radius:10px;margin-bottom:16px}.switch-copy strong{display:block;font-size:13px}.switch-info{font-size:12px;color:var(--muted);margin-top:2px}.logo-control{display:flex;align-items:center;gap:8px;color:#f8fafc;font-size:12px;font-weight:700;white-space:nowrap;cursor:pointer}.logo-control input{accent-color:#22c55e;width:18px;height:18px}
+    .drop-zone{border:1px dashed #475569;background:#0f172a;border-radius:10px;padding:24px;text-align:center;transition:.15s}.drop-zone.drag{border-color:var(--green);background:#142c24}.drop-zone strong{display:block;font-size:14px}.drop-zone p{margin:5px 0 12px;color:var(--muted);font-size:12px}
     .queue-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:23px 0 12px}.queue-head h2{font-size:15px;margin:0}.queue-count{color:var(--muted);font-size:12px}
-    .queue{display:grid;gap:13px}.empty{color:var(--muted);border:1px dashed #303b48;border-radius:10px;text-align:center;padding:26px 15px}
-    .video-card{border:1px solid #273442;border-radius:12px;background:#0e151e;padding:16px}
-    .video-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}.file-name{font-weight:750;word-break:break-word}.file-size{color:var(--muted);font-size:11px;margin-top:3px}.remove{width:30px;height:30px;border:1px solid #34404e;background:#151e29;color:#aab8c8;border-radius:7px;flex:none}.remove:hover{color:#fff}
+    .queue{display:grid;gap:10px}.empty{color:var(--muted);border:1px dashed #475569;border-radius:9px;text-align:center;padding:26px 15px}
+    .video-card{border:1px solid #334155;border-radius:9px;background:#0f172a;padding:16px}
+    .video-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}.file-name{font-weight:750;word-break:break-word}.file-size{color:var(--muted);font-size:11px;margin-top:3px}.remove{width:30px;height:30px;border:1px solid #475569;background:#1e293b;color:#cbd5e1;border-radius:7px;flex:none}.remove:hover{color:#fff}
     .metadata{display:grid;grid-template-columns:1fr 1fr;gap:0 13px;margin-top:10px}.field.full{grid-column:1/-1}.field label{display:block;color:#a3b0c1;font-size:10px;font-weight:800;letter-spacing:.65px;text-transform:uppercase;margin:12px 0 5px}
-    .input{width:100%;border:1px solid #2b3745;background:#0a1119;color:var(--text);border-radius:7px;padding:9px 10px;outline:none;font-size:12px}.input:focus{border-color:#6283aa}.input:disabled{opacity:.55}
-    textarea.input{min-height:62px;resize:vertical}.platforms{display:flex;flex-wrap:wrap;gap:8px;margin-top:11px}.platform-toggle{display:flex;align-items:center;gap:7px;border:1px solid #2b3846;background:#131d28;border-radius:7px;padding:7px 10px;color:#d6e0ea;font-size:11px;font-weight:700}.platform-toggle input{accent-color:#36c18d}
+    .input{width:100%;border:1px solid #334155;background:#0f172a;color:var(--text);border-radius:7px;padding:9px 10px;outline:none;font-size:12px}.input:focus{border-color:#38bdf8}.input:disabled{opacity:.55}
+    textarea.input{min-height:62px;resize:vertical}.platforms{display:flex;flex-wrap:wrap;gap:8px;margin-top:11px}.platform-toggle{display:flex;align-items:center;gap:7px;border:1px solid #334155;background:#1e293b;border-radius:7px;padding:7px 10px;color:#d6e0ea;font-size:11px;font-weight:700}.platform-toggle input{accent-color:#22c55e}
     .schedule-note{font-size:10px;color:#8291a3;margin:7px 0 0}
-    .progress-block{border-top:1px solid #25313e;margin-top:14px;padding-top:12px}.progress-row{display:flex;justify-content:space-between;gap:12px;color:#d9e3ed;font-size:11px;font-weight:700}.progress-meta{color:var(--muted);font-weight:500}.progress-track{height:6px;border-radius:8px;background:#202a35;margin-top:8px;overflow:hidden}.progress-fill{height:100%;width:0;background:linear-gradient(90deg,#239e72,#51dfaa);transition:width .15s}
-    .badges{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.badge{background:#1a2430;border:1px solid #2d3947;border-radius:20px;padding:4px 8px;color:#9eacbd;font-size:10px;font-weight:750}.badge.active{color:#a7d2ff;border-color:#3a5774}.badge.done{color:#9aefcd;border-color:#286149}.badge.failed{color:#ffadb6;border-color:#70404a}.badge.waiting{color:#f1ce89;border-color:#5a4a2d}
-    .queue-actions{display:flex;align-items:center;gap:10px;margin-top:16px}.queue-status{font-size:11px;color:var(--muted)}
-    .modal{position:fixed;inset:0;background:#03060bcc;display:none;place-items:center;padding:18px;z-index:4}.modal.open{display:grid}.dialog{width:min(560px,100%);max-height:90vh;overflow:auto;background:#141d28;border:1px solid #344253;border-radius:14px;padding:21px;box-shadow:0 25px 100px #000b}.dialog h2{font-size:16px;margin:0}.dialog-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:19px}.settings-status{font-size:11px;color:var(--muted);margin:13px 0 4px}.setup-help{padding:10px 12px;background:#101822;border-radius:8px;color:#a6b4c5;font-size:11px;margin-top:14px}.setup-help code{color:#c6d9f6}
-    .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#1a2634;border:1px solid #38495d;color:#eef3fb;padding:10px 15px;border-radius:9px;display:none;z-index:8;max-width:min(90vw,600px);text-align:center}.toast.show{display:block}
-    @media(max-width:680px){.shell{width:calc(100% - 22px);padding-top:20px}.panel{padding:15px}header{align-items:flex-start}.brand{gap:9px}.brand-mark{width:37px;height:37px}.brand h1{font-size:16px}.header-actions{gap:6px}.header-actions .button{padding:8px}.metadata{grid-template-columns:1fr}.field.full{grid-column:auto}.video-card{padding:12px}.queue-actions{align-items:flex-start;flex-direction:column}}
+    .progress-block{border-top:1px solid #334155;margin-top:14px;padding-top:12px}.progress-row{display:flex;justify-content:space-between;gap:12px;color:#d9e3ed;font-size:11px;font-weight:700}.progress-meta{color:var(--muted);font-weight:500}.progress-track{height:6px;border-radius:8px;background:#334155;margin-top:8px;overflow:hidden}.progress-fill{height:100%;width:0;background:#22c55e;transition:width .15s}
+    .badges{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.badge{background:#1e293b;border:1px solid #334155;border-radius:20px;padding:4px 8px;color:#cbd5e1;font-size:10px;font-weight:750}.badge.active{color:#7dd3fc;border-color:#0369a1}.badge.done{color:#4ade80;border-color:#166534}.badge.failed{color:#f87171;border-color:#991b1b}.badge.waiting{color:#fbbf24;border-color:#92400e}
+    .queue-actions{display:flex;align-items:center;gap:10px;margin-top:16px;flex-wrap:wrap}.queue-status{font-size:11px;color:var(--muted)}
+    .modal{position:fixed;inset:0;background:#020617cc;display:none;place-items:center;padding:18px;z-index:4}.modal.open{display:grid}.dialog{width:min(560px,100%);max-height:90vh;overflow:auto;background:#1e293b;border:1px solid #475569;border-radius:12px;padding:21px;box-shadow:0 25px 100px #000b}.dialog h2{font-size:16px;margin:0}.dialog-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:19px}.settings-status{font-size:11px;color:var(--muted);margin:13px 0 4px}.setup-help{padding:10px 12px;background:#0f172a;border-radius:8px;color:#cbd5e1;font-size:11px;margin-top:14px}.setup-help code{color:#7dd3fc}
+    .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#1e293b;border:1px solid #475569;color:#f8fafc;padding:10px 15px;border-radius:9px;display:none;z-index:8;max-width:min(90vw,600px);text-align:center}.toast.show{display:block}
+    @media(max-width:680px){.shell{width:calc(100% - 22px);padding-top:20px}.panel{padding:15px}header{align-items:flex-start}.brand{gap:9px}.brand-mark{width:37px;height:37px}.brand h1{font-size:16px}.header-actions{gap:6px}.header-actions .button{padding:8px}.metadata{grid-template-columns:1fr}.field.full{grid-column:auto}.video-card{padding:12px}.switch-row{align-items:flex-start;flex-direction:column}.queue-actions{align-items:flex-start;flex-direction:column}}
     @media(max-width:400px){.subtitle{max-width:215px}.header-actions .button{font-size:10px;padding:7px}.drop-zone{padding:18px 12px}}
   </style>
 </head>
 <body>
   <main class="shell">
     <header>
-      <div class="brand"><div class="brand-mark">◉</div><div><h1>PureSunni Bulk Video Publisher</h1><p class="subtitle">Publish large videos directly from your browser to multiple platforms.</p></div></div>
-      <div class="header-actions"><button id="settingsButton" class="button">Settings</button></div>
+      <div class="brand"><div class="brand-mark">◉</div><div><h1>PureSunni — बल्क वीडियो पब्लिशर</h1><p class="subtitle">वीडियो को क्रम से प्रोसेस करें और कई प्लेटफ़ॉर्म पर पब्लिश करें।</p></div></div>
+      <div class="header-actions"><button id="settingsButton" class="button">सेटिंग्स</button></div>
     </header>
-    <div class="security-note">Every queued video is automatically watermarked in your browser before upload. YouTube and Facebook receive 16 MiB chunks directly; Instagram temporarily fetches the processed video from this app (under 1 GB).</div>
+    <div class="security-note">वीडियो इस सर्वर पर अपलोड होकर एक-एक करके प्रोसेस होते हैं और पब्लिशिंग से पहले डिस्क पर सेव किए जाते हैं। YouTube और Facebook को 16 MiB के हिस्सों में अपलोड किया जाता है; Instagram इस ऐप से प्रोसेस किया हुआ वीडियो लेता है (1 GB से कम)।</div>
     <section class="panel">
-      <div class="panel-head"><div><h2>Bulk upload queue</h2><p class="hint">Add 5, 10, or 20+ videos. Queue runs at most two videos at a time.</p></div></div>
+      <div class="panel-head"><div><h2>बल्क अपलोड क्यू</h2><p class="hint">कई वीडियो जोड़ें; अपलोड, FFmpeg प्रोसेसिंग और पब्लिशिंग क्रम से चलेगी।</p></div></div>
+      <div class="switch-row">
+        <div class="switch-copy"><strong>चैनल लोगो वॉटरमार्क स्विच</strong><div id="logoInfo" class="switch-info">लोगो की स्थिति जाँची जा रही है...</div></div>
+        <label class="logo-control"><input id="logoSwitch" type="checkbox" checked><span id="logoSwitchLabel">ON (लोगो लगेगा)</span></label>
+      </div>
       <div id="dropZone" class="drop-zone">
-        <strong>Drop video files here</strong>
-        <p>Videos are watermarked on your device, then streamed to the selected platforms.</p>
-        <button id="chooseFiles" type="button" class="button">Choose video files</button>
+        <strong>वीडियो फ़ाइलें यहाँ छोड़ें</strong>
+        <p>फ़ाइलें सर्वर पर प्रोसेस होंगी, फिर चुने हुए प्लेटफ़ॉर्म पर अपलोड की जाएँगी।</p>
+        <button id="chooseFiles" type="button" class="button">वीडियो फ़ाइलें चुनें</button>
         <input id="filePicker" type="file" accept="video/*" multiple hidden>
       </div>
-      <div class="queue-head"><h2>Videos</h2><span id="queueCount" class="queue-count">0 videos</span></div>
-      <div id="queue" class="queue"><div class="empty">Add videos to build your publishing queue.</div></div>
-      <div class="queue-actions"><button id="startQueue" class="button primary" disabled>Start Bulk Upload (2 at a time)</button><span id="queueStatus" class="queue-status">Queue is idle.</span></div>
+      <div class="queue-head"><h2>क्यू और सेव किए गए चेकपॉइंट</h2><span id="queueCount" class="queue-count">0 वीडियो</span></div>
+      <div id="queue" class="queue"><div class="empty">पब्लिशिंग क्यू बनाने के लिए वीडियो जोड़ें।</div></div>
+      <div class="queue-actions"><button id="startQueue" class="button primary" disabled>क्रमवार क्यू शुरू करें</button><button id="retryFailed" class="button danger" type="button">विफल वीडियो फिर चलाएँ</button><button id="clearDone" class="button" type="button">पूरे हुए हटाएँ</button><span id="queueStatus" class="queue-status">क्यू खाली है।</span></div>
     </section>
   </main>
 
   <div id="settingsModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
     <form id="settingsForm" class="dialog">
-      <h2 id="settingsTitle">Platform credentials</h2>
-      <p class="hint">Credentials are used only by the authenticated server. Saved settings are encrypted at rest.</p>
-      <p id="settingsStatus" class="settings-status">Checking configuration…</p>
+      <h2 id="settingsTitle">प्लेटफ़ॉर्म क्रेडेंशियल</h2>
+      <p class="hint">क्रेडेंशियल केवल प्रमाणित सर्वर पर इस्तेमाल होते हैं। सेव की गई सेटिंग्स डिस्क पर एन्क्रिप्ट होती हैं।</p>
+      <p id="settingsStatus" class="settings-status">कॉन्फ़िगरेशन जाँचा जा रहा है…</p>
       <div class="field"><label for="ytClientId">YouTube OAuth Client ID</label><input id="ytClientId" class="input" type="password" autocomplete="off"></div>
       <div class="field"><label for="ytClientSecret">YouTube OAuth Client Secret</label><input id="ytClientSecret" class="input" type="password" autocomplete="new-password"></div>
       <div class="field"><label for="ytRefreshToken">YouTube OAuth Refresh Token</label><input id="ytRefreshToken" class="input" type="password" autocomplete="off"></div>
       <div class="field"><label for="fbPageId">Facebook Page ID</label><input id="fbPageId" class="input" type="password" autocomplete="off"></div>
       <div class="field"><label for="fbPageToken">Facebook Page Access Token</label><input id="fbPageToken" class="input" type="password" autocomplete="new-password"></div>
       <div class="field"><label for="igUserId">Instagram Business Account ID</label><input id="igUserId" class="input" type="password" autocomplete="off"></div>
-      <div class="setup-help">Blank fields are left unchanged. To save credentials here, set <code>CONFIG_ENCRYPTION_KEY</code> to a secret 64-character hexadecimal key. Alternatively configure <code>YOUTUBE_CLIENT_ID</code>, <code>YOUTUBE_CLIENT_SECRET</code>, <code>YOUTUBE_REFRESH_TOKEN</code>, <code>FB_PAGE_ID</code>, <code>FB_PAGE_ACCESS_TOKEN</code>, and <code>IG_USER_ID</code> as server environment variables. Instagram publishes immediately; its Graph API does not provide scheduled Reels publishing.</div>
-      <div class="dialog-actions"><button type="button" id="closeSettings" class="button">Close</button><button id="saveSettings" class="button primary" type="submit">Save encrypted settings</button></div>
+      <div class="setup-help">खाली फ़ील्ड्स की मौजूदा वैल्यू नहीं बदलेगी। यहाँ क्रेडेंशियल सेव करने के लिए <code>CONFIG_ENCRYPTION_KEY</code> को 64-कैरेक्टर की गुप्त hexadecimal key पर सेट करें। या सर्वर environment variables में YouTube/Facebook/Instagram कॉन्फ़िगर करें। Instagram Reels तुरंत पब्लिश होते हैं; Graph API शेड्यूल्ड पब्लिशिंग नहीं देता।</div>
+      <div class="dialog-actions"><button type="button" id="closeSettings" class="button">बंद करें</button><button id="saveSettings" class="button primary" type="submit">एन्क्रिप्ट करके सेव करें</button></div>
     </form>
   </div>
   <div id="toast" class="toast" role="status"></div>
   <script type="module">
-    import { FFmpeg } from '/vendor/ffmpeg/index.js';
-
     const $ = (selector, root = document) => root.querySelector(selector);
     const CHUNK_SIZE = 16 * 1024 * 1024;
-    const MAX_CONCURRENT = 2;
     const PLATFORM_NAMES = { youtube: 'YouTube', facebook: 'Facebook Page', instagram: 'Instagram' };
+    const VIDEO_STATUS_LABELS = {
+      queued: 'क्यू में', uploading_source: 'फ़ाइल अपलोड हो रही है', processing: 'प्रोसेस हो रहा है',
+      uploading: 'पब्लिश हो रहा है', complete: 'पूरा हुआ', partial: 'कुछ सफल', failed: 'विफल'
+    };
+    const PLATFORM_STATUS_LABELS = {
+      Preparing: 'तैयारी', Uploading: 'अपलोड हो रहा है', Retrying: 'दोबारा कोशिश',
+      Publishing: 'पब्लिश हो रहा है', Hosting: 'सर्वर पर अपलोड', Complete: 'पूरा हुआ',
+      Failed: 'विफल', Waiting: 'प्रतीक्षा'
+    };
     const SETTINGS_FIELDS = {
       YOUTUBE_CLIENT_ID: '#ytClientId',
       YOUTUBE_CLIENT_SECRET: '#ytClientSecret',
@@ -93,8 +104,6 @@
     let videos = [];
     let running = false;
     let toastTimer;
-    let ffmpeg;
-    let watermarkTail = Promise.resolve();
 
     async function api(url, options = {}) {
       const response = await fetch(url, {
@@ -130,38 +139,50 @@
       return ['youtube', 'facebook', 'instagram'].filter((platform) => video.platforms[platform]);
     }
 
+    function videoName(video) {
+      return video.file?.name || video.sourceName || 'वीडियो';
+    }
+
+    function videoSize(video) {
+      return video.file?.size || video.sourceSize || 0;
+    }
+
     function renderQueue() {
-      $('#queueCount').textContent = `${videos.length} ${videos.length === 1 ? 'video' : 'videos'}`;
+      $('#queueCount').textContent = `${videos.length} वीडियो`;
       $('#startQueue').disabled = running || !videos.some((video) => video.state === 'queued');
+      $('#retryFailed').disabled = running || !videos.some((video) => video.state === 'failed' || video.state === 'partial');
+      $('#clearDone').disabled = running || !videos.some((video) => video.state === 'complete');
       if (!videos.length) {
-        $('#queue').innerHTML = '<div class="empty">Add videos to build your publishing queue.</div>';
+        $('#queue').innerHTML = '<div class="empty">पब्लिशिंग क्यू बनाने के लिए वीडियो जोड़ें।</div>';
         return;
       }
       $('#queue').innerHTML = videos.map((video) => {
+        const locked = Boolean(video.jobId) || video.state !== 'queued' || running;
         const platforms = ['youtube', 'facebook', 'instagram'].map((platform) => `
-          <label class="platform-toggle"><input data-platform="${platform}" type="checkbox" ${video.platforms[platform] ? 'checked' : ''} ${video.state !== 'queued' || running ? 'disabled' : ''}>${PLATFORM_NAMES[platform]}</label>`).join('');
-        const statusText = video.state === 'queued' ? 'Queued' : video.state === 'watermarking' ? 'Applying watermark' : video.state === 'uploading' ? 'Uploading' : video.state === 'complete' ? 'Complete' : video.state === 'partial' ? 'Partial success' : video.state === 'failed' ? 'Failed' : 'Queued';
+          <label class="platform-toggle"><input data-platform="${platform}" type="checkbox" ${video.platforms[platform] ? 'checked' : ''} ${locked ? 'disabled' : ''}>${PLATFORM_NAMES[platform]}</label>`).join('');
+        const statusText = VIDEO_STATUS_LABELS[video.state] || VIDEO_STATUS_LABELS.queued;
         const tags = video.tags;
         const badges = ['youtube', 'facebook', 'instagram'].filter((platform) => video.platforms[platform] || video.platformState[platform]).map((platform) => {
           const state = video.platformState[platform] || 'Waiting';
           const css = state === 'Complete' ? 'done' : state === 'Failed' ? 'failed' : state === 'Waiting' ? 'waiting' : 'active';
           const progress = video.platformProgress[platform];
           const error = video.platformError?.[platform];
-          return `<span class="badge ${css}" data-badge="${platform}"${error ? ` title="${escapeHtml(error)}"` : ''}>${PLATFORM_NAMES[platform]}: ${escapeHtml(progress !== undefined && state === 'Uploading' ? `${progress}%` : state)}</span>`;
+          const label = progress !== undefined && state === 'Uploading' ? `${progress}%` : PLATFORM_STATUS_LABELS[state] || state;
+          return `<span class="badge ${css}" data-badge="${platform}"${error ? ` title="${escapeHtml(error)}"` : ''}>${PLATFORM_NAMES[platform]}: ${escapeHtml(label)}</span>`;
         }).join('');
         return `<article class="video-card" data-video="${video.id}">
-          <div class="video-top"><div><div class="file-name">${escapeHtml(video.file.name)}</div><div class="file-size">${formatBytes(video.file.size)} · ${statusText}</div></div><button class="remove" data-remove="${video.id}" aria-label="Remove video" ${running ? 'disabled' : ''}>×</button></div>
+          <div class="video-top"><div><div class="file-name">${escapeHtml(videoName(video))}</div><div class="file-size">${formatBytes(videoSize(video))} · ${statusText}</div></div><button class="remove" data-remove="${video.id}" aria-label="वीडियो हटाएँ" ${running ? 'disabled' : ''}>×</button></div>
           <div class="metadata">
-            <div class="field full"><label>Title</label><input class="input" data-field="title" maxlength="100" value="${escapeHtml(video.title)}" ${video.state !== 'queued' || running ? 'disabled' : ''}></div>
-            <div class="field full"><label>Description</label><textarea class="input" data-field="description" maxlength="5000" ${video.state !== 'queued' || running ? 'disabled' : ''}>${escapeHtml(video.description)}</textarea></div>
-            <div class="field"><label>Tags (comma separated)</label><input class="input" data-field="tags" value="${escapeHtml(tags)}" placeholder="news, community, update" ${video.state !== 'queued' || running ? 'disabled' : ''}></div>
-            <div class="field"><label>Visibility</label><select class="input" data-field="visibility" ${video.state !== 'queued' || running ? 'disabled' : ''}>
-              <option value="public" ${video.visibility === 'public' ? 'selected' : ''}>Public</option><option value="unlisted" ${video.visibility === 'unlisted' ? 'selected' : ''}>Unlisted</option><option value="private" ${video.visibility === 'private' ? 'selected' : ''}>Private</option>
+            <div class="field full"><label>शीर्षक</label><input class="input" data-field="title" maxlength="100" value="${escapeHtml(video.title)}" ${locked ? 'disabled' : ''}></div>
+            <div class="field full"><label>विवरण</label><textarea class="input" data-field="description" maxlength="5000" ${locked ? 'disabled' : ''}>${escapeHtml(video.description)}</textarea></div>
+            <div class="field"><label>टैग (अल्पविराम से अलग करें)</label><input class="input" data-field="tags" value="${escapeHtml(tags)}" placeholder="समाचार, समुदाय, अपडेट" ${locked ? 'disabled' : ''}></div>
+            <div class="field"><label>दृश्यता</label><select class="input" data-field="visibility" ${locked ? 'disabled' : ''}>
+              <option value="public" ${video.visibility === 'public' ? 'selected' : ''}>सार्वजनिक</option><option value="unlisted" ${video.visibility === 'unlisted' ? 'selected' : ''}>असूचीबद्ध</option><option value="private" ${video.visibility === 'private' ? 'selected' : ''}>निजी</option>
             </select></div>
-            <div class="field full"><label>Schedule date &amp; time (optional)</label><input class="input" type="datetime-local" data-field="scheduledAt" value="${escapeHtml(video.scheduledAt)}" ${video.state !== 'queued' || running ? 'disabled' : ''}><p class="schedule-note">Schedules YouTube and Facebook. Instagram Reels publish immediately.</p></div>
+            <div class="field full"><label>शेड्यूल तारीख़ और समय (वैकल्पिक)</label><input class="input" type="datetime-local" data-field="scheduledAt" value="${escapeHtml(video.scheduledAt)}" ${locked ? 'disabled' : ''}><p class="schedule-note">YouTube और Facebook के लिए शेड्यूल होगा। Instagram Reels तुरंत पब्लिश होते हैं।</p></div>
             <div class="field full"><div class="platforms">${platforms}</div></div>
           </div>
-          <div class="progress-block"><div class="progress-row"><span data-progress-label>${statusText}</span><span class="progress-meta" data-progress-meta>0% · 0 MB / ${formatBytes(video.file.size)}</span></div><div class="progress-track"><div class="progress-fill" data-progress-fill></div></div><div class="badges" data-badges>${badges}</div></div>
+          <div class="progress-block"><div class="progress-row"><span data-progress-label>${statusText}</span><span class="progress-meta" data-progress-meta>0% · 0 MB / ${formatBytes(videoSize(video))}</span></div><div class="progress-track"><div class="progress-fill" data-progress-fill></div></div><div class="badges" data-badges>${badges}</div></div>
         </article>`;
       }).join('');
     }
@@ -170,38 +191,43 @@
       const card = $(`[data-video="${CSS.escape(video.id)}"]`);
       if (!card) return;
       const directPlatforms = ['youtube', 'facebook'].filter((platform) => video.platforms[platform]).length;
-      const total = video.file.size * directPlatforms;
+      const currentSize = videoSize(video);
+      const total = currentSize * directPlatforms;
       const sent = ['youtube', 'facebook'].reduce((sum, platform) => sum + (video.platformBytes[platform] || 0), 0);
       const percent = total ? Math.min(100, Math.floor(sent * 100 / total)) : (video.state === 'complete' ? 100 : 0);
       const elapsed = Math.max(1, (Date.now() - (video.startedAt || Date.now())) / 1000);
       const speed = sent / elapsed;
-      const label = video.state === 'watermarking' ? 'Applying watermark' : video.state === 'uploading' ? 'Uploading' : video.state === 'complete' ? 'Complete' : video.state === 'partial' ? 'Partial success' : video.state === 'failed' ? 'Failed' : 'Queued';
+      const label = VIDEO_STATUS_LABELS[video.state] || VIDEO_STATUS_LABELS.queued;
       $('[data-progress-label]', card).textContent = label;
-      $('[data-progress-meta]', card).textContent = video.state === 'watermarking'
-        ? `${video.watermarkProgress}% · Applying the automatic logo watermark…`
-        : `${percent}% · ${formatBytes(sent)} / ${formatBytes(total || video.file.size)}${video.state === 'uploading' ? ` · ${formatBytes(speed)}/s` : ''}`;
-      $('[data-progress-fill]', card).style.width = `${video.state === 'watermarking' ? video.watermarkProgress : percent}%`;
-      card.querySelector('.file-size').textContent = `${formatBytes(video.file.size)} · ${label}`;
+      const sourcePercent = video.sourceProgress || 0;
+      const progress = video.state === 'uploading_source' ? sourcePercent : percent;
+      const progressText = video.state === 'processing' ? 'FFmpeg वीडियो प्रोसेस कर रहा है…'
+        : video.state === 'uploading_source' ? `${sourcePercent}% · फ़ाइल अपलोड`
+          : `${percent}% · ${formatBytes(sent)} / ${formatBytes(total || currentSize)}${video.state === 'uploading' ? ` · ${formatBytes(speed)}/s` : ''}`;
+      $('[data-progress-meta]', card).textContent = progressText;
+      $('[data-progress-fill]', card).style.width = `${progress}%`;
+      card.querySelector('.file-size').textContent = `${formatBytes(videoSize(video))} · ${label}`;
       const badges = ['youtube', 'facebook', 'instagram'].filter((platform) => video.platforms[platform] || video.platformState[platform]).map((platform) => {
         const state = video.platformState[platform] || 'Waiting';
         const css = state === 'Complete' ? 'done' : state === 'Failed' ? 'failed' : state === 'Waiting' ? 'waiting' : 'active';
         const progress = video.platformProgress[platform];
         const error = video.platformError?.[platform];
-        return `<span class="badge ${css}" data-badge="${platform}"${error ? ` title="${escapeHtml(error)}"` : ''}>${PLATFORM_NAMES[platform]}: ${escapeHtml(progress !== undefined && state === 'Uploading' ? `${progress}%` : state)}</span>`;
+        const label = progress !== undefined && state === 'Uploading' ? `${progress}%` : PLATFORM_STATUS_LABELS[state] || state;
+        return `<span class="badge ${css}" data-badge="${platform}"${error ? ` title="${escapeHtml(error)}"` : ''}>${PLATFORM_NAMES[platform]}: ${escapeHtml(label)}</span>`;
       }).join('');
       $('[data-badges]', card).innerHTML = badges;
     }
 
     function addFiles(fileList) {
-      if (running) return toast('Wait until the current queue finishes before adding more files.');
+      if (running) return toast('नई फ़ाइलें जोड़ने से पहले मौजूदा क्यू पूरी होने दें।');
       const files = Array.from(fileList).filter((file) => file.type.startsWith('video/') || /\.(mp4|mov|m4v|webm|mkv|avi)$/i.test(file.name));
-      if (!files.length) return toast('Select at least one video file.');
+      if (!files.length) return toast('कम-से-कम एक वीडियो फ़ाइल चुनें।');
       for (const file of files) {
         const title = file.name.replace(/\.[^.]+$/, '').slice(0, 100);
         videos.push({
-          id: crypto.randomUUID(), file, title, description: '', tags: '', visibility: 'public', scheduledAt: '',
+          id: crypto.randomUUID(), file, sourceName: file.name, sourceSize: file.size, title, description: '', tags: '', visibility: 'public', scheduledAt: '',
           platforms: { youtube: true, facebook: true, instagram: false },
-          platformState: {}, platformError: {}, platformProgress: {}, platformBytes: {}, state: 'queued', watermarkProgress: 0, error: null, startedAt: null
+          platformState: {}, platformError: {}, platformProgress: {}, platformBytes: {}, state: 'queued', error: null, startedAt: null
         });
       }
       renderQueue();
@@ -215,104 +241,87 @@
         tags: video.tags.split(',').map((tag) => tag.trim()).filter(Boolean),
         visibility: video.visibility,
         scheduledAt: video.scheduledAt ? new Date(video.scheduledAt).toISOString() : null,
-        fileSize: video.file.size
+        fileSize: video.file?.size || video.sourceSize
       };
     }
 
-    async function getFFmpeg() {
-      if (!ffmpeg) ffmpeg = new FFmpeg();
-      if (!ffmpeg.loaded) {
-        await ffmpeg.load({
-          coreURL: '/vendor/ffmpeg-core/ffmpeg-core.js',
-          wasmURL: '/vendor/ffmpeg-core/ffmpeg-core.wasm'
-        });
-      }
-      return ffmpeg;
-    }
-
-    let logoAssetPromise;
-    function getLogoAsset() {
-      if (!logoAssetPromise) {
-        logoAssetPromise = fetch('/logo.png', { cache: 'force-cache' }).then(async (response) => {
-          if (!response.ok) throw new Error(`Could not load the automatic watermark logo (HTTP ${response.status}).`);
-          const bytes = await response.arrayBuffer();
-          const image = await createImageBitmap(new Blob([bytes], { type: 'image/png' }));
-          const asset = { bytes, width: image.width, height: image.height };
-          image.close();
-          return asset;
-        });
-      }
-      return logoAssetPromise;
-    }
-
-    async function watermarkFile(video) {
-      const engine = await getFFmpeg();
-      const logo = await getLogoAsset();
-      const inputPath = `${video.id}.input`;
-      const logoPath = `${video.id}.logo.png`;
-      const outputPath = `${video.id}.mp4`;
-      const progressHandler = ({ progress }) => {
-        if (!Number.isFinite(progress)) return;
-        video.watermarkProgress = Math.max(0, Math.min(99, Math.floor(progress * 100)));
-        refreshVideoCard(video);
-      };
-      const writtenFiles = new Set();
-      engine.on('progress', progressHandler);
-      try {
-        await engine.writeFile(inputPath, new Uint8Array(await video.file.arrayBuffer()));
-        writtenFiles.add(inputPath);
-        await engine.writeFile(logoPath, new Uint8Array(logo.bytes.slice(0)));
-        writtenFiles.add(logoPath);
-        writtenFiles.add(outputPath);
-        const maxLogoWidth = Math.min(120, 60 * logo.width / logo.height);
-        const filter = `[1:v]format=rgba,colorchannelmixer=aa=0.78[watermark];[watermark][0:v]scale2ref=w='min(main_w*0.08,${maxLogoWidth})':h=-1[logo][video];[video][logo]overlay=x=W-w-16:y=16:format=auto[v]`;
-        const exitCode = await engine.exec([
-          '-i', inputPath,
-          '-i', logoPath,
-          '-filter_complex', filter,
-          '-map', '[v]',
-          '-map', '0:a?',
-          '-map_metadata', '0',
-          '-c:v', 'libx264',
-          '-preset', 'ultrafast',
-          '-crf', '22',
-          '-c:a', 'copy',
-          '-movflags', '+faststart',
-          '-f', 'mp4',
-          outputPath
-        ]);
-        if (exitCode !== 0) throw new Error('Could not apply the automatic logo watermark to this video.');
-        writtenFiles.add(outputPath);
-        const output = await engine.readFile(outputPath);
-        if (!output.length) throw new Error('The watermarked video output is empty.');
-        const filename = `${video.file.name.replace(/\.[^.]+$/, '')}.mp4`;
-        video.watermarkProgress = 100;
-        return new File([output], filename, { type: 'video/mp4' });
-      } finally {
-        engine.off('progress', progressHandler);
-        try {
-          const files = await engine.listDir('/');
-          for (const file of writtenFiles) {
-            if (files.some((entry) => entry.name === file)) await engine.deleteFile(file);
-          }
-        } catch (error) {
-          console.error(`Could not clear temporary watermark files: ${error}`);
-        }
-      }
-    }
-
-    function applyWatermark(video) {
-      const processing = watermarkTail.then(() => watermarkFile(video));
-      watermarkTail = processing.catch((error) => {
-        console.error(`Video watermarking failed: ${error.message}`);
+    async function createServerJob(video) {
+      const job = await api('/api/queue/jobs', {
+        method: 'POST',
+        body: JSON.stringify({ ...metadataFor(video), sourceName: video.sourceName, platforms: video.platforms })
       });
-      return processing;
+      video.jobId = job.id;
+      video.backendStatus = job.status;
+      return job;
+    }
+
+    async function uploadSource(video) {
+      video.state = 'uploading_source';
+      video.sourceProgress = 0;
+      refreshVideoCard(video);
+      const response = await xhrRequest({
+        method: 'PUT',
+        url: `/api/queue/jobs/${encodeURIComponent(video.jobId)}/source`,
+        headers: { 'Content-Type': video.file.type || 'application/octet-stream' },
+        body: video.file,
+        timeout: 30 * 60 * 1000,
+        onProgress: (loaded) => {
+          video.sourceProgress = Math.min(100, Math.floor(loaded * 100 / video.sourceSize));
+          refreshVideoCard(video);
+        }
+      });
+      let payload = {};
+      try {
+        payload = response.text ? JSON.parse(response.text) : {};
+      } catch {
+        throw new Error(`फ़ाइल अपलोड से अमान्य जवाब मिला (HTTP ${response.status})।`);
+      }
+      if (response.status < 200 || response.status >= 300) {
+        throw new Error(payload.error || `फ़ाइल अपलोड विफल हुआ (HTTP ${response.status})।`);
+      }
+    }
+
+    async function waitForProcessed(video) {
+      while (true) {
+        const job = await api(`/api/queue/jobs/${encodeURIComponent(video.jobId)}`);
+        video.backendStatus = job.status;
+        if (job.status === 'failed') throw new Error(job.error || 'सर्वर पर वीडियो प्रोसेसिंग विफल हुई।');
+        if (job.status === 'processed' || ['uploading', 'complete', 'partial'].includes(job.status)) return job;
+        video.state = 'processing';
+        refreshVideoCard(video);
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+      }
+    }
+
+    async function loadProcessedFile(video, job) {
+      if (video.processedFile) return;
+      const response = await fetch(job.outputUrl || `/api/queue/jobs/${encodeURIComponent(video.jobId)}/output`, { cache: 'no-store' });
+      if (!response.ok) throw new Error(`प्रोसेस किया हुआ वीडियो नहीं मिल सका (HTTP ${response.status})।`);
+      const blob = await response.blob();
+      if (!blob.size) throw new Error('प्रोसेस किया हुआ वीडियो खाली है।');
+      const basename = video.sourceName.replace(/\.[^.]+$/, '');
+      video.file = new File([blob], `${basename}.mp4`, { type: 'video/mp4' });
+      video.processedFile = true;
+      refreshVideoCard(video);
     }
 
     function updateProgress(video, platform, loaded) {
       video.platformBytes[platform] = loaded;
       video.platformProgress[platform] = Math.min(100, Math.floor(loaded * 100 / video.file.size));
       refreshVideoCard(video);
+    }
+
+    async function saveJobProgress(video, status) {
+      if (!video.jobId) return;
+      await api(`/api/queue/jobs/${encodeURIComponent(video.jobId)}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          status,
+          platformState: video.platformState,
+          platformError: video.platformError,
+          error: video.error || ''
+        })
+      });
     }
 
     function xhrRequest({ method, url, headers = {}, body, onProgress, timeout = 5 * 60 * 1000 }) {
@@ -326,12 +335,12 @@
         };
         xhr.onload = () => resolve({ status: xhr.status, text: xhr.responseText, getHeader: (name) => xhr.getResponseHeader(name) });
         xhr.onerror = () => {
-          const error = new Error('Network connection dropped during upload.');
+          const error = new Error('अपलोड के दौरान नेटवर्क कनेक्शन टूट गया।');
           error.networkError = true;
           reject(error);
         };
-        xhr.ontimeout = () => reject(new Error('Upload request timed out.'));
-        xhr.onabort = () => reject(new Error('Upload request was cancelled.'));
+        xhr.ontimeout = () => reject(new Error('अपलोड अनुरोध का समय समाप्त हुआ।'));
+        xhr.onabort = () => reject(new Error('अपलोड अनुरोध रद्द किया गया।'));
         xhr.send(body);
       });
     }
@@ -357,7 +366,7 @@
           await new Promise((resolve) => setTimeout(resolve, Math.min(12000, 1000 * (2 ** attempt))));
         }
       }
-      throw lastError || new Error('Upload failed after retries.');
+      throw lastError || new Error('कई कोशिशों के बाद भी अपलोड विफल हुआ।');
     }
 
     async function uploadYouTube(video, metadata) {
@@ -480,7 +489,7 @@
     }
 
     async function publishInstagram(video, metadata) {
-      if (video.file.size >= 1024 ** 3) throw new Error('Instagram Reels require a video smaller than 1 GB.');
+      if (video.file.size >= 1024 ** 3) throw new Error('Instagram Reels के लिए वीडियो 1 GB से छोटा होना चाहिए।');
       video.platformState.instagram = 'Hosting';
       refreshVideoCard(video);
       const upload = await xhrRequest({
@@ -494,13 +503,13 @@
       try {
         hosted = JSON.parse(upload.text);
       } catch {
-        throw new Error(`Could not host the watermarked Instagram video (HTTP ${upload.status}).`);
+        throw new Error(`Instagram वीडियो सर्वर पर सेव नहीं हो सका (HTTP ${upload.status})।`);
       }
       if (upload.status < 200 || upload.status >= 300) {
-        throw new Error(hosted.error || `Could not host the watermarked Instagram video (HTTP ${upload.status}).`);
+        throw new Error(hosted.error || `Instagram वीडियो सर्वर पर सेव नहीं हो सका (HTTP ${upload.status})।`);
       }
       if (typeof hosted.videoUrl !== 'string' || hosted.fileSize !== video.file.size) {
-        throw new Error('The app did not return a valid hosted Instagram video.');
+        throw new Error('ऐप ने Instagram वीडियो का मान्य पता नहीं दिया।');
       }
       video.platformState.instagram = 'Publishing';
       refreshVideoCard(video);
@@ -513,39 +522,56 @@
     }
 
     async function processVideo(video) {
-      video.state = 'watermarking';
       video.startedAt = Date.now();
       const platforms = selectedPlatforms(video);
-      for (const platform of platforms) {
-        video.platformState[platform] = 'Watermarking';
-        delete video.platformError[platform];
-      }
-      refreshVideoCard(video);
       if (!platforms.length) {
-        video.error = 'Select at least one platform.';
-        video.state = 'failed';
-        refreshVideoCard(video);
+        toast(`${videoName(video)}: शुरू करने से पहले कम-से-कम एक प्लेटफ़ॉर्म चुनें।`);
         return;
       }
       try {
-        video.file = await applyWatermark(video);
+        if (!video.jobId) {
+          if (!video.file) throw new Error('दोबारा कोशिश करने के लिए सोर्स वीडियो फिर से चुनें।');
+          await createServerJob(video);
+          await uploadSource(video);
+        }
+        video.state = 'processing';
+        refreshVideoCard(video);
+        const job = await waitForProcessed(video);
+        await loadProcessedFile(video, job);
       } catch (error) {
-        video.error = `Watermarking failed: ${error.message}`;
+        video.error = error.message;
         video.state = 'failed';
         for (const platform of platforms) {
-          video.platformState[platform] = 'Failed';
-          video.platformError[platform] = video.error;
+          if (video.platformState[platform] !== 'Complete') {
+            video.platformState[platform] = 'Failed';
+            video.platformError[platform] = video.error;
+          }
         }
         refreshVideoCard(video);
-        toast(`${video.file.name}: ${video.error}`);
+        if (video.jobId) {
+          try {
+            await saveJobProgress(video, 'failed');
+          } catch (checkpointError) {
+            console.error(`Could not save failed queue checkpoint: ${checkpointError.message}`);
+          }
+        }
+        toast(`${videoName(video)}: ${video.error}`);
         return;
       }
       video.state = 'uploading';
-      for (const platform of platforms) video.platformState[platform] = 'Waiting';
-      refreshVideoCard(video);
-      const metadata = metadataFor(video);
       for (const platform of platforms) {
+        if (video.platformState[platform] !== 'Complete') {
+          video.platformState[platform] = 'Waiting';
+          delete video.platformError[platform];
+        }
+      }
+      refreshVideoCard(video);
+      await saveJobProgress(video, 'uploading');
+      const metadata = metadataFor(video);
+      for (const platform of platforms.filter((name) => video.platformState[name] !== 'Complete')) {
         try {
+          video.platformState[platform] = 'Preparing';
+          await saveJobProgress(video, 'uploading');
           if (platform === 'youtube') await uploadYouTube(video, metadata);
           if (platform === 'facebook') await uploadFacebook(video, metadata);
           if (platform === 'instagram') await publishInstagram(video, metadata);
@@ -560,11 +586,13 @@
           }
           refreshVideoCard(video);
         }
+        await saveJobProgress(video, 'uploading');
       }
       const completed = platforms.filter((platform) => video.platformState[platform] === 'Complete').length;
       video.state = completed === platforms.length ? 'complete' : completed ? 'partial' : 'failed';
       refreshVideoCard(video);
-      if (video.error) toast(`${video.file.name}: ${video.error}`);
+      await saveJobProgress(video, video.state);
+      if (video.error) toast(`${videoName(video)}: ${video.error}`);
     }
 
     async function startQueue() {
@@ -573,46 +601,122 @@
       if (!pending.length) return;
       running = true;
       renderQueue();
-      $('#queueStatus').textContent = `Running at most ${MAX_CONCURRENT} videos at a time…`;
-      let next = 0;
-      let active = 0;
+      $('#queueStatus').textContent = 'वीडियो क्रम से प्रोसेस और पब्लिश हो रहे हैं…';
       let finished = 0;
-      await new Promise((resolve) => {
-        const pump = () => {
-          while (active < MAX_CONCURRENT && next < pending.length) {
-            const video = pending[next++];
-            active += 1;
-            processVideo(video).catch((error) => {
-              video.state = 'failed';
-              video.error = error.message;
-              refreshVideoCard(video);
-            }).finally(() => {
-              active -= 1;
-              finished += 1;
-              $('#queueStatus').textContent = `${finished} of ${pending.length} videos finished.`;
-              if (finished === pending.length) resolve();
-              else pump();
-            });
+      try {
+        for (const video of pending) {
+          try {
+            await processVideo(video);
+          } catch (error) {
+            video.state = 'failed';
+            video.error = error.message;
+            refreshVideoCard(video);
           }
+          finished += 1;
+          $('#queueStatus').textContent = `${pending.length} में से ${finished} वीडियो पूरे हुए।`;
+        }
+      } finally {
+        running = false;
+        renderQueue();
+      }
+      $('#queueStatus').textContent = `${pending.length} वीडियो की क्यू पूरी हुई।`;
+    }
+
+    async function loadQueue() {
+      const saved = await api('/api/queue');
+      $('#logoSwitch').checked = saved.logoEnabled;
+      $('#logoSwitch').disabled = !saved.hasLogoFile;
+      $('#logoSwitchLabel').textContent = saved.hasLogoFile
+        ? (saved.logoEnabled ? 'ON (लोगो लगेगा)' : 'OFF (बिना लोगो)')
+        : 'लोगो फ़ाइल नहीं मिली';
+      $('#logoInfo').textContent = saved.hasLogoFile
+        ? 'public/logo.png मौजूद है — स्विच से लोगो ON/OFF करें।'
+        : 'public/logo.png नहीं मिली — लोगो इस्तेमाल करने के लिए इस फ़ाइल को public फ़ोल्डर में रखें।';
+      videos = saved.items.map((job) => {
+        const interrupted = job.status === 'uploading';
+        const platformState = { ...(job.platformState || {}) };
+        const platformError = { ...(job.platformError || {}) };
+        if (interrupted) {
+          for (const [platform, state] of Object.entries(platformState)) {
+            if (['Preparing', 'Uploading', 'Retrying', 'Publishing', 'Hosting'].includes(state)) {
+              platformState[platform] = 'Failed';
+              platformError[platform] = 'पब्लिशिंग बीच में रुक गई; दोबारा कोशिश से पहले प्लेटफ़ॉर्म पर स्थिति जाँचें।';
+            }
+          }
+        }
+        let state = job.status;
+        if (['processed', 'pending', 'processing', 'uploading'].includes(state)) state = 'queued';
+        if (state === 'awaiting_upload' || state === 'uploading_source') {
+          state = 'failed';
+          job.error = 'सोर्स फ़ाइल का अपलोड अधूरा है। दोबारा कोशिश करने के लिए वीडियो फिर से चुनें।';
+        }
+        if (['uploading', 'processed'].includes(job.status) &&
+            Object.values(platformState).includes('Failed')) state = 'partial';
+        return {
+          id: job.id, jobId: job.id, file: null, processedFile: false,
+          sourceName: job.sourceName, sourceSize: job.sourceSize,
+          title: job.metadata.title, description: job.metadata.description || '',
+          tags: (job.metadata.tags || []).join(', '), visibility: job.metadata.visibility || 'public',
+          scheduledAt: job.metadata.scheduledAt ? new Date(job.metadata.scheduledAt).toISOString().slice(0, 16) : '',
+          platforms: job.platforms, platformState, platformError, platformProgress: {}, platformBytes: {},
+          state, backendStatus: job.status, error: job.error || (interrupted ? 'पब्लिशिंग बीच में रुक गई। फ़ेल हुए प्लेटफ़ॉर्म की स्थिति जाँचकर फिर कोशिश करें।' : ''),
+          outputUrl: job.outputUrl, startedAt: null
         };
-        pump();
       });
-      running = false;
       renderQueue();
-      $('#queueStatus').textContent = `Finished ${pending.length} ${pending.length === 1 ? 'video' : 'videos'}.`;
+      if (saved.isProcessing) $('#queueStatus').textContent = 'सर्वर सेव की गई क्यू प्रोसेस कर रहा है…';
+      else if (videos.length) $('#queueStatus').textContent = 'सेव की गई क्यू वापस लोड हुई। जारी रखने के लिए शुरू करें।';
+    }
+
+    async function retryFailed() {
+      if (running) return;
+      const result = await api('/api/queue/retry-failed', { method: 'POST', body: '{}' });
+      const byId = new Map(result.items.map((item) => [item.id, item]));
+      for (const video of videos.filter((entry) => entry.state === 'failed' || entry.state === 'partial')) {
+        if (!video.jobId && video.file) {
+          video.state = 'queued';
+          video.error = '';
+          continue;
+        }
+        const job = byId.get(video.jobId);
+        if (!job) continue;
+        if (job.status === 'failed' && video.file && !job.outputUrl) {
+          await api(`/api/queue/jobs/${encodeURIComponent(video.jobId)}`, { method: 'DELETE' });
+          video.jobId = null;
+        } else if (job.status === 'failed') {
+          video.error = job.error;
+          continue;
+        }
+        video.state = 'queued';
+        video.backendStatus = job.status;
+        video.platformState = { ...(job.platformState || {}) };
+        video.platformError = { ...(job.platformError || {}) };
+        video.processedFile = false;
+        video.error = '';
+      }
+      renderQueue();
+      $('#queueStatus').textContent = 'विफल वीडियो दोबारा चलाने के लिए तैयार हैं।';
+    }
+
+    async function clearCompleted() {
+      if (running) return;
+      await api('/api/queue/clear-done', { method: 'POST', body: '{}' });
+      videos = videos.filter((video) => video.state !== 'complete');
+      renderQueue();
+      $('#queueStatus').textContent = 'पूरे हुए वीडियो और उनकी फ़ाइलें हटा दी गईं।';
     }
 
     async function loadSettingsStatus() {
       try {
         const status = await api('/api/settings');
         const configured = [];
-        if (status.configured.youtube) configured.push('YouTube connected');
-        if (status.configured.facebook) configured.push('Facebook connected');
-        if (status.configured.instagram) configured.push('Instagram connected');
-        $('#settingsStatus').textContent = configured.length ? configured.join(' · ') : 'No platform credentials configured.';
+        if (status.configured.youtube) configured.push('YouTube जुड़ा है');
+        if (status.configured.facebook) configured.push('Facebook जुड़ा है');
+        if (status.configured.instagram) configured.push('Instagram जुड़ा है');
+        $('#settingsStatus').textContent = configured.length ? configured.join(' · ') : 'किसी प्लेटफ़ॉर्म के क्रेडेंशियल कॉन्फ़िगर नहीं हैं।';
         $('#saveSettings').disabled = !status.encryptedSettingsAvailable;
         if (!status.encryptedSettingsAvailable) {
-          $('#settingsStatus').textContent += ' Configure credentials with server environment variables or set CONFIG_ENCRYPTION_KEY to enable encrypted saving.';
+          $('#settingsStatus').textContent += ' क्रेडेंशियल सेव करने के लिए सर्वर environment variables सेट करें या CONFIG_ENCRYPTION_KEY कॉन्फ़िगर करें।';
         }
       } catch (error) {
         $('#settingsStatus').textContent = error.message;
@@ -656,10 +760,35 @@
     $('#queue').addEventListener('click', (event) => {
       const remove = event.target.closest('[data-remove]');
       if (!remove || running) return;
-      videos = videos.filter((video) => video.id !== remove.dataset.remove);
-      renderQueue();
+      const video = videos.find((entry) => entry.id === remove.dataset.remove);
+      if (!video) return;
+      const removeVideo = async () => {
+        if (video.jobId) await api(`/api/queue/jobs/${encodeURIComponent(video.jobId)}`, { method: 'DELETE' });
+        videos = videos.filter((entry) => entry.id !== video.id);
+        renderQueue();
+      };
+      removeVideo().catch((error) => toast(error.message));
     });
     $('#startQueue').addEventListener('click', startQueue);
+    $('#retryFailed').addEventListener('click', () => retryFailed().catch((error) => toast(error.message)));
+    $('#clearDone').addEventListener('click', () => clearCompleted().catch((error) => toast(error.message)));
+    $('#logoSwitch').addEventListener('change', async (event) => {
+      const checkbox = event.currentTarget;
+      checkbox.disabled = true;
+      try {
+        const result = await api('/api/queue/logo', {
+          method: 'PUT',
+          body: JSON.stringify({ logoEnabled: checkbox.checked })
+        });
+        checkbox.checked = result.logoEnabled;
+        $('#logoSwitchLabel').textContent = result.logoEnabled ? 'ON (लोगो लगेगा)' : 'OFF (बिना लोगो)';
+      } catch (error) {
+        checkbox.checked = !checkbox.checked;
+        toast(error.message);
+      } finally {
+        checkbox.disabled = false;
+      }
+    });
     $('#settingsButton').addEventListener('click', () => {
       $('#settingsModal').classList.add('open');
       loadSettingsStatus();
@@ -678,11 +807,15 @@
       try {
         await api('/api/settings', { method: 'PUT', body: JSON.stringify(config) });
         Object.values(SETTINGS_FIELDS).forEach((selector) => { $(selector).value = ''; });
-        toast('Credentials saved encrypted on the server.');
+        toast('क्रेडेंशियल सर्वर पर एन्क्रिप्ट करके सेव किए गए।');
         await loadSettingsStatus();
       } catch (error) {
         toast(error.message);
       }
+    });
+    loadQueue().catch((error) => {
+      $('#queueStatus').textContent = 'सेव की गई क्यू लोड नहीं हो सकी।';
+      toast(error.message);
     });
   </script>
 </body>

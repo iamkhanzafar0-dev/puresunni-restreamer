@@ -4,6 +4,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { Transform } = require('node:stream');
 const { pipeline } = require('node:stream/promises');
+const { spawn } = require('node:child_process');
 const express = require('express');
 
 const PORT = Number(process.env.PORT) || 3000;
@@ -11,8 +12,14 @@ const ADMIN_USER = process.env.ADMIN_USER || 'admin';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 const GRAPH_API_VERSION = 'v22.0';
 const CONFIG_FILE = path.resolve(process.env.CONFIG_FILE || path.join(__dirname, 'data', 'publisher-config.enc'));
+const QUEUE_DIR = path.resolve(process.env.QUEUE_DATA_DIR || path.join(__dirname, 'data', 'video-queue'));
+const QUEUE_STATE_FILE = path.join(QUEUE_DIR, 'queue_state.json');
+const QUEUE_SOURCE_DIR = path.join(QUEUE_DIR, 'sources');
+const QUEUE_OUTPUT_DIR = path.join(QUEUE_DIR, 'processed');
+const QUEUE_TEMP_DIR = path.join(QUEUE_DIR, 'temp');
 const CONFIG_ENCRYPTION_KEY = process.env.CONFIG_ENCRYPTION_KEY;
 const PUBLIC_BASE_URL = process.env.PUBLIC_BASE_URL;
+const FFMPEG_PATH = process.env.FFMPEG_PATH || 'ffmpeg';
 const INSTAGRAM_MEDIA_DIR = path.join(os.tmpdir(), `puresunni-instagram-media-${process.pid}`);
 const INSTAGRAM_MEDIA_TTL = 24 * 60 * 60 * 1000;
 const MAX_INSTAGRAM_FILE_SIZE = 1024 ** 3 - 1;
@@ -39,8 +46,199 @@ const app = express();
 let savedConfig = {};
 let cachedYouTubeToken = null;
 const instagramMedia = new Map();
+let queueState;
+let isQueueProcessing = false;
 
 fs.mkdirSync(INSTAGRAM_MEDIA_DIR, { recursive: true, mode: 0o700 });
+fs.mkdirSync(QUEUE_SOURCE_DIR, { recursive: true, mode: 0o700 });
+fs.mkdirSync(QUEUE_OUTPUT_DIR, { recursive: true, mode: 0o700 });
+fs.mkdirSync(QUEUE_TEMP_DIR, { recursive: true, mode: 0o700 });
+
+function saveQueueState() {
+  const tempFile = `${QUEUE_STATE_FILE}.${process.pid}.tmp`;
+  const descriptor = fs.openSync(tempFile, 'w', 0o600);
+  try {
+    fs.writeFileSync(descriptor, `${JSON.stringify(queueState, null, 2)}\n`);
+    fs.fsyncSync(descriptor);
+  } finally {
+    fs.closeSync(descriptor);
+  }
+  fs.renameSync(tempFile, QUEUE_STATE_FILE);
+  if (process.platform !== 'win32') {
+    const directory = fs.openSync(QUEUE_DIR, 'r');
+    try {
+      fs.fsyncSync(directory);
+    } finally {
+      fs.closeSync(directory);
+    }
+  }
+}
+
+function loadQueueState() {
+  if (!fs.existsSync(QUEUE_STATE_FILE)) return { logoEnabled: true, items: [] };
+  const state = JSON.parse(fs.readFileSync(QUEUE_STATE_FILE, 'utf8'));
+  if (!state || typeof state !== 'object' || !Array.isArray(state.items) ||
+      state.items.some((item) => !item || typeof item !== 'object' ||
+        typeof item.id !== 'string' || !/^[a-f\d-]{36}$/i.test(item.id))) {
+    throw new Error('Saved video queue has an invalid format.');
+  }
+  state.logoEnabled = state.logoEnabled !== false;
+  return state;
+}
+
+function queuePaths(id) {
+  return {
+    source: path.join(QUEUE_SOURCE_DIR, `${id}.input`),
+    uploadTemp: path.join(QUEUE_TEMP_DIR, `${id}.upload`),
+    output: path.join(QUEUE_OUTPUT_DIR, `${id}.mp4`),
+    outputTemp: path.join(QUEUE_TEMP_DIR, `${id}.mp4`)
+  };
+}
+
+function publicJob(item) {
+  const job = { ...item };
+  if (fs.existsSync(queuePaths(item.id).output)) {
+    job.outputUrl = `/api/queue/jobs/${encodeURIComponent(item.id)}/output`;
+  } else {
+    job.outputUrl = '';
+  }
+  return job;
+}
+
+function recoverQueue() {
+  for (const entry of fs.readdirSync(QUEUE_DIR)) {
+    if (/^queue_state\.json\.\d+\.tmp$/.test(entry)) {
+      fs.rmSync(path.join(QUEUE_DIR, entry), { force: true });
+    }
+  }
+  for (const entry of fs.readdirSync(QUEUE_TEMP_DIR)) {
+    fs.rmSync(path.join(QUEUE_TEMP_DIR, entry), { force: true, recursive: true });
+  }
+  for (const item of queueState.items) {
+    const files = queuePaths(item.id);
+    if (item.status === 'processing') {
+      item.status = fs.existsSync(files.output) ? 'processed' : fs.existsSync(files.source) ? 'pending' : 'failed';
+      if (item.status === 'failed') item.error = 'Processing was interrupted and the source file is unavailable.';
+    } else if (item.status === 'uploading_source' || item.status === 'awaiting_upload') {
+      item.status = fs.existsSync(files.source) ? 'pending' : 'failed';
+      if (item.status === 'failed') item.error = 'Source upload was interrupted. Add the file again to retry.';
+    } else if (item.status === 'uploading') {
+      for (const [platform, state] of Object.entries(item.platformState || {})) {
+        if (['Preparing', 'Uploading', 'Retrying', 'Publishing', 'Hosting'].includes(state)) {
+          item.platformState[platform] = 'Failed';
+          item.platformError[platform] = 'Publishing was interrupted; retry this platform after checking its status.';
+        }
+      }
+      item.status = fs.existsSync(files.output) ? 'processed' : fs.existsSync(files.source) ? 'pending' : 'failed';
+    } else if (item.status === 'processed' && !fs.existsSync(files.output)) {
+      item.status = fs.existsSync(files.source) ? 'pending' : 'failed';
+      if (item.status === 'failed') item.error = 'Processed output and source file are unavailable.';
+    }
+    if (item.status === 'processed' || ['complete', 'partial'].includes(item.status)) {
+      fs.rmSync(files.source, { force: true });
+    }
+  }
+  saveQueueState();
+}
+
+function processSingleJob(item) {
+  return new Promise((resolve, reject) => {
+    const files = queuePaths(item.id);
+    if (!fs.existsSync(files.source)) return reject(new Error('Source file is unavailable.'));
+    fs.rmSync(files.outputTemp, { force: true });
+    const hasLogo = item.logoEnabled && fs.existsSync(path.join(__dirname, 'public', 'logo.png'));
+    const args = ['-y', '-i', files.source];
+    if (hasLogo) {
+      args.push(
+        '-i', path.join(__dirname, 'public', 'logo.png'),
+        '-filter_complex', '[1:v]scale=110:-1[lg];[0:v][lg]overlay=W-w-24:24[vout]',
+        '-map', '[vout]'
+      );
+    } else {
+      args.push('-map', '0:v');
+    }
+    args.push(
+      '-map', '0:a?',
+      '-map_metadata', '0',
+      '-c:v', 'libx264',
+      '-preset', 'ultrafast',
+      '-crf', '22',
+      '-c:a', 'aac',
+      '-b:a', '128k',
+      '-movflags', '+faststart',
+      files.outputTemp
+    );
+
+    const ffmpeg = spawn(FFMPEG_PATH, args, { stdio: ['ignore', 'ignore', 'pipe'] });
+    let errLog = '';
+    let settled = false;
+    ffmpeg.stderr.on('data', (data) => {
+      errLog = `${errLog}${data.toString()}`.slice(-4000);
+    });
+    ffmpeg.on('error', (error) => {
+      if (settled) return;
+      settled = true;
+      reject(new Error(`Could not start FFmpeg (${FFMPEG_PATH}): ${error.message}`));
+    });
+    ffmpeg.on('close', (code) => {
+      if (settled) return;
+      settled = true;
+      if (code === 0 && fs.existsSync(files.outputTemp) && fs.statSync(files.outputTemp).size > 0) {
+        try {
+          fs.renameSync(files.outputTemp, files.output);
+          fs.chmodSync(files.output, 0o600);
+          resolve();
+        } catch (error) {
+          reject(error);
+        }
+      } else {
+        reject(new Error(errLog.slice(-400) || `FFmpeg exited with code ${code}.`));
+      }
+    });
+  });
+}
+
+async function runQueue() {
+  if (isQueueProcessing) return;
+  isQueueProcessing = true;
+  try {
+    while (true) {
+      const item = queueState.items.find((job) => job.status === 'pending');
+      if (!item) break;
+      item.status = 'processing';
+      item.error = '';
+      saveQueueState();
+      try {
+        await processSingleJob(item);
+        item.status = 'processed';
+        item.error = '';
+        saveQueueState();
+        try {
+          fs.rmSync(queuePaths(item.id).source, { force: true });
+        } catch (error) {
+          console.error(`Could not remove processed source for job ${item.id}: ${error.message}`);
+        }
+      } catch (error) {
+        fs.rmSync(queuePaths(item.id).outputTemp, { force: true });
+        item.status = 'failed';
+        item.error = error.message;
+        saveQueueState();
+      }
+    }
+  } finally {
+    isQueueProcessing = false;
+  }
+}
+
+function scheduleQueue() {
+  runQueue().catch((error) => {
+    console.error(`Video queue stopped: ${error.message}`);
+    isQueueProcessing = false;
+  });
+}
+
+queueState = loadQueueState();
+recoverQueue();
 
 function readConfig() {
   if (!fs.existsSync(CONFIG_FILE)) return;
@@ -256,10 +454,205 @@ app.get('/media/:token', (req, res) => {
 });
 app.use(authorized);
 app.use(express.json({ limit: '64kb' }));
-app.use('/vendor/ffmpeg', express.static(path.join(__dirname, 'node_modules', '@ffmpeg', 'ffmpeg', 'dist', 'esm')));
-app.use('/vendor/ffmpeg-core', express.static(path.join(__dirname, 'node_modules', '@ffmpeg', 'core', 'dist', 'esm')));
 app.use(express.static(path.join(__dirname, 'public'), { index: false }));
 app.get('/', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+
+app.get('/api/queue', (_req, res) => {
+  res.json({
+    logoEnabled: queueState.logoEnabled,
+    isProcessing: isQueueProcessing,
+    hasLogoFile: fs.existsSync(path.join(__dirname, 'public', 'logo.png')),
+    items: queueState.items.map(publicJob)
+  });
+});
+
+app.put('/api/queue/logo', (req, res) => {
+  if (typeof req.body?.logoEnabled !== 'boolean') {
+    return res.status(400).json({ error: 'logoEnabled must be a boolean.' });
+  }
+  queueState.logoEnabled = req.body.logoEnabled;
+  saveQueueState();
+  res.json({ ok: true, logoEnabled: queueState.logoEnabled });
+});
+
+app.post('/api/queue/jobs', (req, res, next) => {
+  try {
+    const metadata = validateMetadata(req.body);
+    const { sourceName, platforms } = req.body || {};
+    if (typeof sourceName !== 'string' || !sourceName.trim() || sourceName.length > 255) {
+      throw Object.assign(new Error('A valid source filename is required.'), { status: 400 });
+    }
+    if (!platforms || typeof platforms !== 'object' ||
+        ['youtube', 'facebook', 'instagram'].some((platform) => typeof platforms[platform] !== 'boolean') ||
+        !Object.values(platforms).some(Boolean)) {
+      throw Object.assign(new Error('Select at least one supported platform.'), { status: 400 });
+    }
+    const { fileSize: sourceSize, ...jobMetadata } = metadata;
+    const item = {
+      id: crypto.randomUUID(),
+      sourceName: path.win32.basename(sourceName.trim()),
+      sourceSize,
+      metadata: jobMetadata,
+      platforms: {
+        youtube: platforms.youtube,
+        facebook: platforms.facebook,
+        instagram: platforms.instagram
+      },
+      logoEnabled: queueState.logoEnabled,
+      status: 'awaiting_upload',
+      platformState: {},
+      platformError: {},
+      error: '',
+      createdAt: new Date().toISOString()
+    };
+    queueState.items.push(item);
+    saveQueueState();
+    res.status(201).json(publicJob(item));
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.put('/api/queue/jobs/:id/source', async (req, res, next) => {
+  const item = queueState.items.find((job) => job.id === req.params.id);
+  if (!item) return res.sendStatus(404);
+  if (item.status !== 'awaiting_upload') {
+    return res.status(409).json({ error: 'This job is not waiting for a source upload.' });
+  }
+  const contentLength = req.headers['content-length'] === undefined ? null : Number(req.headers['content-length']);
+  if (contentLength !== null && (!Number.isSafeInteger(contentLength) || contentLength !== item.sourceSize)) {
+    return res.status(400).json({ error: 'The uploaded file size does not match the queued source.' });
+  }
+  const files = queuePaths(item.id);
+  let received = 0;
+  const limiter = new Transform({
+    transform(chunk, _encoding, callback) {
+      received += chunk.length;
+      if (received > item.sourceSize) {
+        callback(Object.assign(new Error('Uploaded source exceeds its declared file size.'), { status: 413 }));
+        return;
+      }
+      callback(null, chunk);
+    }
+  });
+  item.status = 'uploading_source';
+  saveQueueState();
+  try {
+    await pipeline(req, limiter, fs.createWriteStream(files.uploadTemp, { flags: 'wx', mode: 0o600 }));
+    if (received !== item.sourceSize) {
+      throw Object.assign(new Error('The source upload ended before the complete file was received.'), { status: 400 });
+    }
+    fs.renameSync(files.uploadTemp, files.source);
+    item.status = 'pending';
+    item.error = '';
+    saveQueueState();
+    scheduleQueue();
+    res.status(202).json(publicJob(item));
+  } catch (error) {
+    fs.rmSync(files.uploadTemp, { force: true });
+    item.status = 'failed';
+    item.error = error.message;
+    saveQueueState();
+    next(error);
+  }
+});
+
+app.get('/api/queue/jobs/:id/output', (req, res) => {
+  const item = queueState.items.find((job) => job.id === req.params.id);
+  if (!item) return res.sendStatus(404);
+  const output = queuePaths(item.id).output;
+  if (!fs.existsSync(output)) return res.sendStatus(404);
+  res.type('video/mp4');
+  res.sendFile(output, (error) => {
+    if (error && !res.headersSent) res.status(error.statusCode || 500).json({ error: 'Could not read the processed video.' });
+  });
+});
+
+app.get('/api/queue/jobs/:id', (req, res) => {
+  const item = queueState.items.find((job) => job.id === req.params.id);
+  if (!item) return res.sendStatus(404);
+  res.json(publicJob(item));
+});
+
+app.patch('/api/queue/jobs/:id', (req, res) => {
+  const item = queueState.items.find((job) => job.id === req.params.id);
+  if (!item) return res.sendStatus(404);
+  const { status, platformState, platformError, error } = req.body || {};
+  if (!['uploading', 'complete', 'partial', 'failed'].includes(status) ||
+      !platformState || typeof platformState !== 'object' || Array.isArray(platformState) ||
+      !platformError || typeof platformError !== 'object' || Array.isArray(platformError)) {
+    return res.status(400).json({ error: 'A valid publishing checkpoint is required.' });
+  }
+  item.status = status;
+  item.platformState = Object.fromEntries(
+    Object.entries(platformState)
+      .filter(([platform, value]) => ['youtube', 'facebook', 'instagram'].includes(platform) &&
+        typeof value === 'string' && value.length <= 40)
+      .map(([platform, value]) => [platform, value])
+  );
+  item.platformError = Object.fromEntries(
+    Object.entries(platformError)
+      .filter(([platform, value]) => ['youtube', 'facebook', 'instagram'].includes(platform) &&
+        typeof value === 'string' && value.length <= 1500)
+      .map(([platform, value]) => [platform, value])
+  );
+  item.error = typeof error === 'string' ? error.slice(0, 1500) : '';
+  saveQueueState();
+  res.json(publicJob(item));
+});
+
+app.post('/api/queue/retry-failed', (_req, res) => {
+  for (const item of queueState.items) {
+    const interruptedPlatform = Object.values(item.platformState || {}).includes('Failed');
+    if (!['failed', 'partial'].includes(item.status) &&
+        !(interruptedPlatform && ['processed', 'uploading'].includes(item.status))) continue;
+    const files = queuePaths(item.id);
+    if (fs.existsSync(files.output)) {
+      item.status = 'processed';
+    } else if (fs.existsSync(files.source)) {
+      item.status = 'pending';
+    } else {
+      item.error = 'The source file is unavailable. Add the file again to retry.';
+      continue;
+    }
+    item.error = '';
+    for (const [platform, state] of Object.entries(item.platformState || {})) {
+      if (state === 'Failed') {
+        delete item.platformState[platform];
+        delete item.platformError[platform];
+      }
+    }
+  }
+  saveQueueState();
+  scheduleQueue();
+  res.json({ ok: true, items: queueState.items.map(publicJob) });
+});
+
+app.post('/api/queue/clear-done', (_req, res) => {
+  const removed = queueState.items.filter((item) => item.status === 'complete');
+  queueState.items = queueState.items.filter((item) => item.status !== 'complete');
+  saveQueueState();
+  for (const item of removed) {
+    const files = queuePaths(item.id);
+    fs.rmSync(files.source, { force: true });
+    fs.rmSync(files.output, { force: true });
+  }
+  res.json({ ok: true });
+});
+
+app.delete('/api/queue/jobs/:id', (req, res) => {
+  const index = queueState.items.findIndex((job) => job.id === req.params.id);
+  if (index < 0) return res.sendStatus(404);
+  const item = queueState.items[index];
+  if (['processing', 'uploading_source', 'uploading'].includes(item.status)) {
+    return res.status(409).json({ error: 'Wait until this job finishes before removing it.' });
+  }
+  queueState.items.splice(index, 1);
+  saveQueueState();
+  const files = queuePaths(item.id);
+  for (const file of Object.values(files)) fs.rmSync(file, { force: true });
+  res.json({ ok: true });
+});
 
 app.post('/api/instagram/media', async (req, res, next) => {
   const token = crypto.randomBytes(32).toString('base64url');
@@ -555,4 +948,5 @@ app.use((error, _req, res, _next) => {
 readConfig();
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`PureSunni Publisher listening on port ${PORT}`);
+  scheduleQueue();
 });
